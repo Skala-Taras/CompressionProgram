@@ -58,13 +58,12 @@ class MainWindow(QMainWindow):
         file_diretion, _ = QFileDialog.getOpenFileName(self, "Compres file")
         if not file_diretion:
             return
-        sava_directories, _ = QFileDialog.getSaveFileName(self, "Decompres file", "", "Huffman Compress Files (*.huffc)")
+        sava_directories, _ = QFileDialog.getSaveFileName(self, "Decompres file", "", "Huffman Compress Files (*.huff)")
         if not sava_directories:
             return
-        # ad = HuffmanCoding()
-        # a =ad.compress_data(file_diretion)
+        ad = HuffmanCoding()
+        ad.compress_data(file_diretion, sava_directories)
         # print(f"--->{file_diretion}")
-        # print(a)
         # print(sava_directories)
         # # for file in files:
 

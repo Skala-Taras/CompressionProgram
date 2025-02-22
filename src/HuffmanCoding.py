@@ -28,16 +28,9 @@ class HuffmanCoding:
     def __init__(self):
         self.root = None
         self.codes = {}
-        self.symbol_freq = {}
+        self.symbols_freq = {}
         self.text_from_file = None
 
-
-    def build_frequency_dict(self) -> dict:
-        freq = {}
-        for char in self.text:
-            freq[char] = freq.get(char, 0) + 1
-        return freq
-    
 
     def build_huffman_tree(self):
         """
@@ -47,10 +40,10 @@ class HuffmanCoding:
         """
         heap = []
         
-        for char in self.text:
-            self.symbol_freq[char] = freq.get(char, 0) + 1
+        for char in self.text_from_file:
+            self.symbols_freq[char] = self.symbols_freq.get(char, 0) + 1
 
-        for char, freq in self.symbol_freq.items():
+        for char, freq in self.symbols_freq.items():
             heapq.heappush(heap, HuffmanNode(char, freq))
         
         while len(heap) > 1:
@@ -67,7 +60,7 @@ class HuffmanCoding:
         self.root = heap[0]  
 
 
-    def generate_codes(self, node = None, current_code="") -> dict:
+    def generate_codes_for_each_char(self, node = None, current_code="") -> None:
         """
         Recursively traverse the Huffman tree to generate the binary codes for each character.
         """
@@ -79,16 +72,12 @@ class HuffmanCoding:
             return
 
         if node.left_child is not None:
-            self.generate_codes(node.left_child, current_code + "0")
+            self.generate_codes_for_each_char(node.left_child, current_code + "0")
         if node.right_child is not None:
-            self.generate_codes(node.right_child, current_code + "1")
+            self.generate_codes_for_each_char(node.right_child, current_code + "1")
 
 
-    def encoded_data(self) -> str:
-        return "".join(self.codes[char] for char in self.text)
-
-
-    def decoded_data(self, encoded_data : str) -> str:
+    def decoded_data(self, file_with_encoded_data : str, direction_for_save_data : str) -> str:
         """
         Decode the encoded data using the Huffman tree.
         """
@@ -96,9 +85,10 @@ class HuffmanCoding:
         try:
             if not encoded_data:
                 raise ValueError("Encoded data is empty")
-            if not all(bit in "01" for bit in encoded_data):
-               raise ValueError("Encoded data must contain only 0s and 1s")
-        
+
+
+
+            
             decoded_data = ""
             current_node = self.root
         
@@ -116,18 +106,61 @@ class HuffmanCoding:
         
         except ArithmeticError as e:
             raise ValueError("Encoded data must contain only 0s and 1s")
-# save_direction: str
-    def compress_data(self, read_direction : str):
+
+
+    def _to_bytes(self, data):
+        b = bytearray()
+        for i in range(0, len(data), 8):
+            b.append(int(data[i:i+8], 2))
+        return bytes(b)
+    
+    def _from_bytes(self, data: bytes) -> str:
+        bit_string = ""
+        for byte in data:
+            bit_string += f"{byte:08b}"
+        return bit_string
+
+    def compress_data(self, read_direction : str, direction_for_save_data : str):
         
         with open(read_direction, 'r', encoding="utf-8") as file:
-            a = file.read()
-        print('GIT')
-        print(a)
+            self.text_from_file = file.read()
+        
 
-a = HuffmanCoding()
-print(a.compress_data("C:/Code/CompressionAlg/test.txt"))
+        self.build_huffman_tree()
+        self.generate_codes_for_each_char()
+
+        encoded_bits = "".join(self.codes[char] for char in self.text_from_file)
+
+        extra_padding = 8 - (len(encoded_bits) % 8) if len(encoded_bits) % 8 != 0 else 0
+
+        encoded_bits += "0" * extra_padding
+        #convert extra_pading to byte and than add extra_padding before main encoded_bit
+        encoded_bits = ("{0:08b}".format(extra_padding)) + encoded_bits
+
+        with open(direction_for_save_data, 'wb') as binary_encoded_file:
+            binary_encoded_file.write(self._to_bytes(encoded_bits))  
+
+        #test
+        print("#################")
+        print(encoded_bits)
+        a = self._to_bytes(encoded_bits)
+        print(encoded_bits)
+        print(self._from_bytes(a))
+        print(self._from_bytes(a) == encoded_bits) 
+
+        
+
+        # print(encoded_bits)              # This is the padded bit string.
+        # print(self._from_bytes(a))       # This should match exactly.
+        #  # Should print True.
+
 
 
               
 # print(t1.replace("\", "/"))
 # print(t2.replace("\", "/"))
+a = "1111000011111111"
+w = ""
+a = "{0:08b}".format(5)
+print(a)
+print(int(a, 2))
