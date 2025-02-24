@@ -68,7 +68,15 @@ class MainWindow(QMainWindow):
         # # for file in files:
 
     def decompress_file(self):
-        pass
+
+        file_diretion, _ = QFileDialog.getOpenFileName(self, "Decompres file")
+        if not file_diretion:
+            return
+        sava_directories, _ = QFileDialog.getSaveFileName(self, "Compres file", "", "Text fail (*.txt)")
+        if not sava_directories:
+            return
+        ad = HuffmanCoding()
+        ad.decompress_data(file_diretion, sava_directories)
 
 
     

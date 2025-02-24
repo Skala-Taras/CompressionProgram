@@ -1,5 +1,4 @@
 import heapq
-import os
 
 class HuffmanNode:
     """
@@ -31,6 +30,20 @@ class HuffmanCoding:
         self.symbols_freq = {}
         self.text_from_file = None
 
+
+    def _to_bytes(self, data):
+        b = bytearray()
+        for i in range(0, len(data), 8):
+            b.append(int(data[i:i+8], 2))
+        return bytes(b)
+    
+
+    def _from_bytes(self, data: bytes) -> str:
+        bit_string = ""
+        for byte in data:
+            bit_string += f"{byte:08b}"
+        return bit_string
+    
 
     def build_huffman_tree(self):
         """
@@ -77,49 +90,6 @@ class HuffmanCoding:
             self.generate_codes_for_each_char(node.right_child, current_code + "1")
 
 
-    def decoded_data(self, file_with_encoded_data : str, direction_for_save_data : str) -> str:
-        """
-        Decode the encoded data using the Huffman tree.
-        """
-
-        try:
-            if not encoded_data:
-                raise ValueError("Encoded data is empty")
-
-
-
-            
-            decoded_data = ""
-            current_node = self.root
-        
-            for bit in encoded_data:
-                if bit == "0":
-                    current_node = current_node.left_child
-                else:
-                    current_node = current_node.right_child
-
-                if current_node.char is not None:
-                    decoded_data += current_node.char
-                    current_node = self.root
-
-            return decoded_data
-        
-        except ArithmeticError as e:
-            raise ValueError("Encoded data must contain only 0s and 1s")
-
-
-    def _to_bytes(self, data):
-        b = bytearray()
-        for i in range(0, len(data), 8):
-            b.append(int(data[i:i+8], 2))
-        return bytes(b)
-    
-    def _from_bytes(self, data: bytes) -> str:
-        bit_string = ""
-        for byte in data:
-            bit_string += f"{byte:08b}"
-        return bit_string
-
     def compress_data(self, read_direction : str, direction_for_save_data : str):
         
         with open(read_direction, 'r', encoding="utf-8") as file:
@@ -147,20 +117,46 @@ class HuffmanCoding:
         print(encoded_bits)
         print(self._from_bytes(a))
         print(self._from_bytes(a) == encoded_bits) 
+    
 
+    def decompress_data(self, file_with_encoded_data : str, direction_for_save_decompress_file : str) -> str:
+
+
+        try:
+            if not file_with_encoded_data:
+                raise ValueError("Encoded data is empty")
+
+            decoded_data = ""
+            current_node = self.root
+
+            with open(file_with_encoded_data, "rb") as f:
+                t_data = f.read()
+            
+            encoded_data_from_file = self._from_bytes(t_data)
+            print(encoded_data_from_file)
+            padding : int = int(encoded_data_from_file[:8], 2)
+            encoded_data_from_file = encoded_data_from_file[:padding]
+
+            for bit in file_with_encoded_data:
+                print(current_node)
+                if bit == "0":
+                    current_node = current_node.left_child
+                else:
+                    current_node = current_node.right_child
+
+                if current_node.char is not None:
+                    decoded_data += current_node.char
+                    current_node = self.root
+
+            
+            with open(direction_for_save_decompress_file, "w", encoding="utf-8") as f:
+                f.write(decoded_data)
         
+        except ArithmeticError as e:
+            raise ValueError("Encoded data must contain only 0s and 1s")
 
-        # print(encoded_bits)              # This is the padded bit string.
-        # print(self._from_bytes(a))       # This should match exactly.
-        #  # Should print True.
-
-
-
-              
-# print(t1.replace("\", "/"))
-# print(t2.replace("\", "/"))
-a = "1111000011111111"
-w = ""
-a = "{0:08b}".format(5)
-print(a)
-print(int(a, 2))
+a = "11111111"
+ba = bytearray()
+ba.append(int(a, 2))
+f = f"{ba[0]:08b}"
+print(type(f))
