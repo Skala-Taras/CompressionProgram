@@ -16,6 +16,9 @@ class HuffmanNode:
         self.left_child = None
         self.right_child = None
     
+    def is_leaf(self):
+        return self.char is not None
+     
     def __lt__(self, other):
         return self.freq < other.freq
 
@@ -39,11 +42,33 @@ class HuffmanCoding:
     
 
     def _from_bytes(self, data: bytes) -> str:
-        bit_string = ""
-        for byte in data:
-            bit_string += f"{byte:08b}"
-        return bit_string
+        return "".join(f"{byte:08b}" for byte in data)
+
+
+    def _serialize_tree(self) -> str:
+        if not self.root:
+            return ""
+        
+        bits = ""
+
+        def pre_order(node):
+            if self.node.is_leaf():
+                bits += '1'
+                char_bytes = self.node.char.encode('utf-32-be')
+                # bits += f"{bit}"
+            else:
+                bits += '0'
+                pre_order(node.left_child)
+                pre_order(node.right_child)
+        pre_order(self.root)
+        return bits
+
     
+    def _deserialize_tree(self, data, index=0):
+        ...
+
+            
+
 
     def build_huffman_tree(self):
         """
@@ -80,13 +105,13 @@ class HuffmanCoding:
         if node is None:
             node = self.root 
 
-        if node.char is not None:
+        if node.char.is_leaf():
             self.codes[node.char] = current_code or "0"
             return
 
-        if node.left_child is not None:
+        if node.left_child.is_leaf():
             self.generate_codes_for_each_char(node.left_child, current_code + "0")
-        if node.right_child is not None:
+        if node.right_child.is_leaf():
             self.generate_codes_for_each_char(node.right_child, current_code + "1")
 
 
@@ -110,14 +135,6 @@ class HuffmanCoding:
         with open(direction_for_save_data, 'wb') as binary_encoded_file:
             binary_encoded_file.write(self._to_bytes(encoded_bits))  
 
-        #test
-        print("#################")
-        print(encoded_bits)
-        a = self._to_bytes(encoded_bits)
-        print(encoded_bits)
-        print(self._from_bytes(a))
-        print(self._from_bytes(a) == encoded_bits) 
-    
 
     def decompress_data(self, file_with_encoded_data : str, direction_for_save_decompress_file : str) -> str:
 
@@ -126,25 +143,29 @@ class HuffmanCoding:
             if not file_with_encoded_data:
                 raise ValueError("Encoded data is empty")
 
-            decoded_data = ""
+            
             current_node = self.root
 
             with open(file_with_encoded_data, "rb") as f:
-                t_data = f.read()
+                data = f.read()
             
-            encoded_data_from_file = self._from_bytes(t_data)
-            print(encoded_data_from_file)
-            padding : int = int(encoded_data_from_file[:8], 2)
-            encoded_data_from_file = encoded_data_from_file[:padding]
+            bit_string  = self._from_bytes(data)
 
-            for bit in file_with_encoded_data:
-                print(current_node)
+            extra_padding  : int = int(bit_string[:8], 2)
+            encoded_data = bit_string[8:]
+
+            if extra_padding > 0:
+                encoded_data = bit_string[:-extra_padding]
+
+            decoded_data = ""
+            current_node = self.root
+            for bit in encoded_data:
                 if bit == "0":
                     current_node = current_node.left_child
                 else:
                     current_node = current_node.right_child
 
-                if current_node.char is not None:
+                if current_node.char.is_leaf():
                     decoded_data += current_node.char
                     current_node = self.root
 
@@ -155,8 +176,4 @@ class HuffmanCoding:
         except ArithmeticError as e:
             raise ValueError("Encoded data must contain only 0s and 1s")
 
-a = "11111111"
-ba = bytearray()
-ba.append(int(a, 2))
-f = f"{ba[0]:08b}"
-print(type(f))
+
