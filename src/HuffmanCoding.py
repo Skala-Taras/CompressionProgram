@@ -34,7 +34,7 @@ class HuffmanCoding:
         self.text_from_file = None
 
 
-    def _to_bytes(self, data):
+    def _to_bytes(self, data : str):
         b = bytearray()
         for i in range(0, len(data), 8):
             b.append(int(data[i:i+8], 2))
@@ -55,7 +55,8 @@ class HuffmanCoding:
             if self.node.is_leaf():
                 bits += '1'
                 char_bytes = self.node.char.encode('utf-32-be')
-                # bits += f"{bit}"
+                for byte in char_bytes:
+                    bits += f"{byte:08b}"
             else:
                 bits += '0'
                 pre_order(node.left_child)
@@ -64,10 +65,27 @@ class HuffmanCoding:
         return bits
 
     
-    def _deserialize_tree(self, data, index=0):
-        ...
+    def _deserialize_tree(self, bit_stream :str, index=0):
+        if index >= len(bit_stream):
+            return None, index
 
-            
+        bit = bit_stream[index]
+        index += 1 
+
+        if bit == '0':
+            node = HuffmanNode(None, 0) #Frequency is not necessary
+            node.left_child, index = self._deserialize_tree(bit_stream, index)
+            node.right_child, index = self._deserialize_tree(bit_stream, index)
+            return bit_stream , index
+        
+        elif bit == '1':
+            char_bits = bit_stream[index: index+32]
+            index += 32 #because our symbol size consists of 4 bytes
+            int_list_char = (int(char_bits[i:i+8], 2) for i in range(0, 32, 8))
+            char = bytes(int_list_char).decode('utf-8-be')
+            return HuffmanNode(char, 0), index #Frequency is not necessary
+
+        else: raise ValueError("Invalid bit in tree deserialization") 
 
 
     def build_huffman_tree(self):
@@ -116,13 +134,16 @@ class HuffmanCoding:
 
 
     def compress_data(self, read_direction : str, direction_for_save_data : str):
-        
+        #TO-DO
         with open(read_direction, 'r', encoding="utf-8") as file:
             self.text_from_file = file.read()
         
-
         self.build_huffman_tree()
         self.generate_codes_for_each_char()
+
+        bits_tree : str= self._serialize_tree()
+        len_tree : int = len(bits_tree)
+        bits_len_tree = ...
 
         encoded_bits = "".join(self.codes[char] for char in self.text_from_file)
 
@@ -137,8 +158,7 @@ class HuffmanCoding:
 
 
     def decompress_data(self, file_with_encoded_data : str, direction_for_save_decompress_file : str) -> str:
-
-
+        #TO-DO
         try:
             if not file_with_encoded_data:
                 raise ValueError("Encoded data is empty")
@@ -176,4 +196,12 @@ class HuffmanCoding:
         except ArithmeticError as e:
             raise ValueError("Encoded data must contain only 0s and 1s")
 
+def to_bytes( data : str):
+        b = bytearray()
+        for i in range(0, len(data), 8):
+            b.append(int(data[i:i+8], 2))
+        return bytes(b)
+a = '11111111'
+t = to_bytes(a)
 
+print(t)
