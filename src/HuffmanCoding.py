@@ -49,23 +49,24 @@ class HuffmanCoding:
         if not self.root:
             return ""
         
-        bits = ""
-
         def pre_order(node):
-            if self.node.is_leaf():
-                bits += '1'
-                char_bytes = self.node.char.encode('utf-32-be')
+            bits = []
+            if node.char is not None:
+                bits.append('1')
+                char_bytes = node.char.encode('utf-32-be')
                 for byte in char_bytes:
-                    bits += f"{byte:08b}"
+                    bits.append(f"{byte:08b}")
             else:
-                bits += '0'
-                pre_order(node.left_child)
-                pre_order(node.right_child)
-        pre_order(self.root)
-        return bits
+                bits.append('0')
+                bits.append(pre_order(node.left_child))
+                bits.append(pre_order(node.right_child))
+            return "".join(bits)
+        
+        return pre_order(self.root)
 
     
-    def _deserialize_tree(self, bit_stream :str, index=0):
+    def _deserialize_tree(self, bit_stream :str, index=0) -> tuple[HuffmanNode | None , int]:
+        
         if index >= len(bit_stream):
             return None, index
 
@@ -76,19 +77,20 @@ class HuffmanCoding:
             node = HuffmanNode(None, 0) #Frequency is not necessary
             node.left_child, index = self._deserialize_tree(bit_stream, index)
             node.right_child, index = self._deserialize_tree(bit_stream, index)
-            return bit_stream , index
+            return node , index
         
         elif bit == '1':
             char_bits = bit_stream[index: index+32]
             index += 32 #because our symbol size consists of 4 bytes
-            int_list_char = (int(char_bits[i:i+8], 2) for i in range(0, 32, 8))
-            char = bytes(int_list_char).decode('utf-8-be')
+            byte_list = [int(char_bits[i:i+8], 2) for i in range(0, 32, 8)]
+            char = bytes(byte_list).decode('utf-32-be')
+            print(f"---> {char}")
             return HuffmanNode(char, 0), index #Frequency is not necessary
 
         else: raise ValueError("Invalid bit in tree deserialization") 
 
 
-    def build_huffman_tree(self):
+    def _build_huffman_tree(self):
         """
         This function builds the Huffman tree by creating a priority queue of Huffman nodes,
         and then repeatedly merging the two nodes with the lowest frequencies untill only one has been left
@@ -116,92 +118,115 @@ class HuffmanCoding:
         self.root = heap[0]  
 
 
-    def generate_codes_for_each_char(self, node = None, current_code="") -> None:
+    def _generate_codes_for_each_char(self, node = None, current_code="") -> None:
         """
         Recursively traverse the Huffman tree to generate the binary codes for each character.
         """
         if node is None:
             node = self.root 
 
-        if node.char.is_leaf():
+        if node.char is not None:
             self.codes[node.char] = current_code or "0"
             return
 
-        if node.left_child.is_leaf():
-            self.generate_codes_for_each_char(node.left_child, current_code + "0")
-        if node.right_child.is_leaf():
-            self.generate_codes_for_each_char(node.right_child, current_code + "1")
+        if node.left_child is not None:
+            self._generate_codes_for_each_char(node.left_child, current_code + "0")
+        if node.right_child is not None:
+            self._generate_codes_for_each_char(node.right_child, current_code + "1")
 
 
-    def compress_data(self, read_direction : str, direction_for_save_data : str):
-        #TO-DO
-        with open(read_direction, 'r', encoding="utf-8") as file:
+    def compress_data(self, read_path : str, write_path : str) -> None:
+
+        with open(read_path, 'r', encoding="utf-8") as file:
             self.text_from_file = file.read()
         
-        self.build_huffman_tree()
-        self.generate_codes_for_each_char()
+        self._build_huffman_tree()
+        self._generate_codes_for_each_char()
 
-        bits_tree : str= self._serialize_tree()
-        len_tree : int = len(bits_tree)
-        bits_len_tree = ...
+        bits_tree = self._serialize_tree()
+        tree_length = len(bits_tree)
+        
+        tree_length_bytes = tree_length.to_bytes(4, 'big')
 
-        encoded_bits = "".join(self.codes[char] for char in self.text_from_file)
+        padded_tree : str = bits_tree + '0' * ((8 - (len(bits_tree) % 8)) % 8)
+        tree_bytes : bytes = self._to_bytes(padded_tree)
 
-        extra_padding = 8 - (len(encoded_bits) % 8) if len(encoded_bits) % 8 != 0 else 0
+        encoded_data : str = "".join(self.codes[char] for char in self.text_from_file)
 
-        encoded_bits += "0" * extra_padding
         #convert extra_pading to byte and than add extra_padding before main encoded_bit
-        encoded_bits = ("{0:08b}".format(extra_padding)) + encoded_bits
+        data_padding = (8 - (len(encoded_data) % 8)) % 8
+        encoded_data += '0' * data_padding
 
-        with open(direction_for_save_data, 'wb') as binary_encoded_file:
-            binary_encoded_file.write(self._to_bytes(encoded_bits))  
+        data_bytes = self._to_bytes(encoded_data)
+
+        all_bytes = (
+                tree_length_bytes +
+                tree_bytes + 
+                bytes([data_padding]) + 
+                data_bytes
+            )
+              
+        with open(write_path, 'wb') as f:
+            f.write(all_bytes)  
 
 
-    def decompress_data(self, file_with_encoded_data : str, direction_for_save_decompress_file : str) -> str:
-        #TO-DO
+    def decompress_data(self, file_with_encoded_data : str, write_path : str) -> str:
+
         try:
             if not file_with_encoded_data:
                 raise ValueError("Encoded data is empty")
 
-            
-            current_node = self.root
-
             with open(file_with_encoded_data, "rb") as f:
                 data = f.read()
+
+            data_bits : str = self._from_bytes(data)
+
+            if len(data_bits) < 32:
+                raise ValueError("Invalid compressed data: Missing tree length header.")
             
-            bit_string  = self._from_bytes(data)
+            len_tree = int(data_bits[:32], 2)   # First element (32 bits) in the data is len tree 
+            data_bits = data_bits[32:]
+            
+            tree_bytes_count = (len_tree + 7) // 8  # Number of bytes used for the tree
+            tree_bits_padded_length = tree_bytes_count * 8  # Total bits (with padding)
 
-            extra_padding  : int = int(bit_string[:8], 2)
-            encoded_data = bit_string[8:]
+            # Extract the tree bits (including padding) and truncate to original length
+            if len(data_bits) < tree_bits_padded_length:
+                raise ValueError("Invalid compressed data: Tree data corrupted.")
+            
+            tree_bits_padded = data_bits[:tree_bits_padded_length]
+            tree_bits = tree_bits_padded[:len_tree]  # Remove padding
+            data_bits = data_bits[tree_bits_padded_length:]
+                
+            self.root, _ = self._deserialize_tree(tree_bits)
 
+            extra_padding = int(data_bits[:8], 2)
+            data_bits = data_bits[8:]  # Skip the 8-bit padding header.
+            
             if extra_padding > 0:
-                encoded_data = bit_string[:-extra_padding]
+                data_bits = data_bits[:-extra_padding]
 
             decoded_data = ""
             current_node = self.root
-            for bit in encoded_data:
+
+            for bit in data_bits:
                 if bit == "0":
                     current_node = current_node.left_child
                 else:
                     current_node = current_node.right_child
 
-                if current_node.char.is_leaf():
+                if current_node.char is not None:
                     decoded_data += current_node.char
                     current_node = self.root
 
             
-            with open(direction_for_save_decompress_file, "w", encoding="utf-8") as f:
+            with open(write_path, "w", encoding="utf-8") as f:
                 f.write(decoded_data)
         
         except ArithmeticError as e:
             raise ValueError("Encoded data must contain only 0s and 1s")
 
-def to_bytes( data : str):
-        b = bytearray()
-        for i in range(0, len(data), 8):
-            b.append(int(data[i:i+8], 2))
-        return bytes(b)
-a = '11111111'
-t = to_bytes(a)
 
-print(t)
+
+
+

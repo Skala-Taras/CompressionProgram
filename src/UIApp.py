@@ -54,7 +54,6 @@ class MainWindow(QMainWindow):
         Returns:
             None
         """
-        print("##########")
         file_diretion, _ = QFileDialog.getOpenFileName(self, "Compres file")
         if not file_diretion:
             return
