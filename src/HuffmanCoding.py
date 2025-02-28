@@ -135,43 +135,66 @@ class HuffmanCoding:
             self._generate_codes_for_each_char(node.right_child, current_code + "1")
 
 
-    def compress_data(self, read_path : str, write_path : str) -> None:
+    def compress_data(self, read_path : str, write_path : str, progress_callback = None) -> None:
+        """
+        Compresses a text file using Huffman coding.
+        
+        Args:
+            input_file: Path to text file to compress
+            output_file: Path to save compressed .bin file
+        """
 
         with open(read_path, 'r', encoding="utf-8") as file:
             self.text_from_file = file.read()
         
+        # Build Huffman tree and codes
         self._build_huffman_tree()
         self._generate_codes_for_each_char()
 
+        # --- Serialize Huffman Tree ---
         bits_tree = self._serialize_tree()
         tree_length = len(bits_tree)
-        
-        tree_length_bytes = tree_length.to_bytes(4, 'big')
 
         padded_tree : str = bits_tree + '0' * ((8 - (len(bits_tree) % 8)) % 8)
         tree_bytes : bytes = self._to_bytes(padded_tree)
 
-        encoded_data : str = "".join(self.codes[char] for char in self.text_from_file)
+        # Encode Text Data with Progress
+        encoded_data = []
+        total_chars = len(self.text_from_file)
+        progress_step = max(1, total_chars // 100)  # Update every ~1%
+        
+        for i, char in enumerate(self.text_from_file):
+            encoded_data.append(self.codes[char])
+            if progress_callback and i % progress_step == 0:
+                progress = int((i / total_chars) * 100)
+                progress_callback(progress)
+            
+        encoded_data = ''.join(encoded_data)
+        if progress_callback:
+            progress_callback(100)  # Final completion
 
         #convert extra_pading to byte and than add extra_padding before main encoded_bit
         data_padding = (8 - (len(encoded_data) % 8)) % 8
-        encoded_data += '0' * data_padding
-
-        data_bytes = self._to_bytes(encoded_data)
-
-        all_bytes = (
-                tree_length_bytes +
-                tree_bytes + 
-                bytes([data_padding]) + 
-                data_bytes
-            )
+        encoded_bytes  = self._to_bytes(encoded_data + '0' * data_padding)
               
         with open(write_path, 'wb') as f:
-            f.write(all_bytes)  
+            f.write(
+                tree_length.to_bytes(4, 'big') +  # 4-byte tree length
+                tree_bytes +                      # Tree data with padding
+                bytes([data_padding]) +           # 1-byte padding info
+                encoded_bytes                     # Compressed text data
+            )
 
 
-    def decompress_data(self, file_with_encoded_data : str, write_path : str) -> str:
-
+    def decompress_data(self, file_with_encoded_data : str, write_path : str, progress_callback=None) -> str:
+        """
+        Decompresses a Huffman-coded file with progress tracking.
+        
+        Args:
+            file_with_encoded_data: Path to compressed .bin file
+            write_path: Path to save decompressed text file
+            progress_callback: Optional function to report progress (0-100)
+        """
         try:
             if not file_with_encoded_data:
                 raise ValueError("Encoded data is empty")
@@ -208,25 +231,25 @@ class HuffmanCoding:
 
             decoded_data = ""
             current_node = self.root
+            total_bits = len(data_bits)
+            progress_step = max(1, total_bits // 100)  # Update every ~1%
 
-            for bit in data_bits:
-                if bit == "0":
-                    current_node = current_node.left_child
-                else:
-                    current_node = current_node.right_child
+            for i, bit in enumerate(data_bits):
+                current_node = current_node.left_child if bit == "0" else current_node.right_child
 
                 if current_node.char is not None:
                     decoded_data += current_node.char
                     current_node = self.root
 
-            
+                if progress_callback and i % progress_step == 0:
+                    progress = int((i / total_bits) * 100)
+                    progress_callback(progress)
+        
+            if progress_callback:
+                progress_callback(100)  # Final completion
+                
             with open(write_path, "w", encoding="utf-8") as f:
                 f.write(decoded_data)
         
         except ArithmeticError as e:
             raise ValueError("Encoded data must contain only 0s and 1s")
-
-
-
-
-
