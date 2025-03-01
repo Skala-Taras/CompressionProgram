@@ -1,5 +1,6 @@
 import heapq
 
+
 class HuffmanNode:
     """
        A node in the Huffman tree.
@@ -15,9 +16,6 @@ class HuffmanNode:
         self.freq = freq
         self.left_child = None
         self.right_child = None
-    
-    def is_leaf(self):
-        return self.char is not None
      
     def __lt__(self, other):
         return self.freq < other.freq
@@ -146,6 +144,9 @@ class HuffmanCoding:
 
         with open(read_path, 'r', encoding="utf-8") as file:
             self.text_from_file = file.read()
+
+        if not self.text_from_file:
+            raise ValueError("Cannot compress empty file")
         
         # Build Huffman tree and codes
         self._build_huffman_tree()
