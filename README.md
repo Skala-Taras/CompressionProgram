@@ -1,46 +1,30 @@
-# Huffman Compression Tool
+#Huffman Compression Tool
+This program is designed for data compression and decompression and operates on files. It is written in Python and uses PyQt6 for UI and background tasks.
 
-A Python-based file compression and decompression tool using Huffman coding algorithm with a graphical user interface.
+##📥 Installation
+You need Python 3.9+ and must install dependencies from requirements.txt:
 
-## Overview
+pip install -r requirements.txt
 
-This application provides a simple and efficient way to compress and decompress files using Huffman coding. It features a user-friendly GUI built with PyQt6 and implements the Huffman coding algorithm for data compression.
+##📂 Method of Use
+Clone the repository from GitHub:
 
-## Features
+git clone https://github.com/Skala-Taras/CompressionProgram.git
 
-- Graphical User Interface for easy file handling
-- File compression using Huffman coding algorithm
-- File decompression capability
-- Progress tracking during compression/decompression
-- Support for any file type
-- Custom `.huffc` file format for compressed files
+Navigate to the main directory and run the program:
 
-## Technical Details
+python run.py
 
-### Components
+Once launched, the main window will appear:
 
-1. **UIApp.py**: Contains the graphical user interface implementation
-   - Built using PyQt6
-   - Features compression and decompression buttons
-   - Includes progress tracking
-   - Handles file selection and saving
 
-2. **HuffmanCoding.py**: Implements the Huffman coding algorithm
-   - `Huffman_node`: Class for creating nodes in the Huffman tree
-   - `HuffmanCoding`: Main class implementing compression logic
-   - Time complexity: O(n log n) for tree construction
 
-### Algorithm
-
-The compression uses Huffman coding which:
-1. Calculates character frequencies in the input
-2. Builds a priority queue based on frequencies
-3. Constructs a Huffman tree
-4. Generates binary codes for each character
-5. Encodes/decodes data using generated codes
-
-Time complexity: O(n log n) for this algorithm
-
-### Prerequisites
-- Python 3.9+
-- PyQt6
+##📌 How to Use
+-Compress a File
+   1. Run the program.
+   2. Click "Compress File" and select the .txt file you want to compress.
+   3. Choose the directory and enter a filename with the .hff extension to save the compressed file.
+-Decompress a File
+   1. Run the program.
+   2. Click "Decompress File" and select the .hff file you want to decompress.
+   3. Choose the directory and enter a filename with the .txt extension to save the decompressed file.

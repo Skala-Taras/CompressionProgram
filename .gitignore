@@ -25,7 +25,8 @@ var/
 .vscode/
 *.swp
 *.swo
-test.txt
+tesFilet2.txt
+test.py
 
 # Project specific
 *.huff  # Huffman compressed files 

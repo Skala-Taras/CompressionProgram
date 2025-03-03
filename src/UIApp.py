@@ -1,9 +1,6 @@
-import os
-import sys
-from PyQt6.QtWidgets import QApplication, QPushButton, QLabel, QMessageBox, QMainWindow, QVBoxLayout, QWidget, QProgressBar, QFileDialog
+from PyQt6.QtWidgets import QPushButton, QLabel, QMessageBox, QMainWindow, QVBoxLayout, QWidget, QProgressBar, QFileDialog
 from PyQt6.QtCore import QSize, QThread, pyqtSignal, Qt, pyqtSlot
-from HuffmanCoding import HuffmanCoding
-import sys 
+from .HuffmanCoding import HuffmanCoding
 
 class CompressionWorker(QThread):
     """
@@ -190,10 +187,3 @@ class MainWindow(QMainWindow):
     def toggle_buttons(self, enabled):
         self.btn_compress.setEnabled(enabled)
         self.btn_decompress.setEnabled(enabled)
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
