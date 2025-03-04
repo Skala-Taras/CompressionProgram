@@ -2,18 +2,15 @@
 This program is designed for data compression and decompression and operates on files. It is written in Python and uses PyQt6 for UI and background tasks.
 
 ## Installation
-You need __Python 3.9+__ and must install dependencies `requirements.txt`:
-``` bash
- pip install -r requirements.txt
-```
-
-## Usage
 Clone the repository from GitHub:
 
 ```bash
 git clone https://github.com/Skala-Taras/
 ```
-
+You need __Python 3.9+__ and should install dependencies `requirements.txt`:
+``` bash
+ pip install -r requirements.txt
+```
 CompressionProgram.git
 Navigate to the main directory and run the program:
 
@@ -105,4 +102,4 @@ The `.hff` compressed file is organized in a specific structure to ensure proper
    - Fills the last byte if encoded data doesn't align to byte boundary
    - Number of padding bits stored in Data Length field
 
-> This structure allows for efficient storage and accurate reconstruction of the original data during decompression. The Huffman tree is stored in a compact binary format that preserves the complete encoding information needed for decompression.
+This structure allows for efficient storage and accurate reconstruction of the original data during decompression. The Huffman tree is stored in a compact binary format that preserves the complete encoding information needed for decompression.
